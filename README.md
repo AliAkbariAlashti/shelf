@@ -1,5 +1,9 @@
 # Shelf
 
+[![PyPI](https://img.shields.io/pypi/v/shelf-recs.svg)](https://pypi.org/project/shelf-recs/)
+[![CI](https://github.com/AliAkbariAlashti/shelf/actions/workflows/ci.yml/badge.svg)](https://github.com/AliAkbariAlashti/shelf/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A drop-in recommendation API for teams without a data science bench.
 
 Most teams have the data for recommendations — page views, cart adds, purchases,
@@ -34,7 +38,7 @@ in your UI: *"Frequently bought alongside Trail Jacket."*
 ## Quickstart
 
 ```bash
-pip install -e .
+pip install shelf-recs
 shelf seed      # populates shelf.db with a small sample catalog + events
 shelf serve     # runs on http://localhost:8000
 ```
