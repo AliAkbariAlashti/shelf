@@ -28,12 +28,10 @@ event volume and falls back automatically:
 | A brand-new user, no history           | **popularity** — recency-weighted trending items |
 | A thin catalog or sparse history       | **content-similarity** — tag/category overlap |
 | Established interaction history        | **item-based CF** — "people who did X also did Y" |
+| High-volume, dense interaction history | **matrix factorization** — implicit-feedback ALS, trained and cached in the background |
 
 Every recommendation returned includes a `reason` string safe to show directly
 in your UI: *"Frequently bought alongside Trail Jacket."*
-
-> Matrix factorization for high-volume, dense catalogs is planned for a future
-> release — see [Roadmap](#roadmap). Shelf does not fake it in the meantime.
 
 ## Quickstart
 
@@ -103,7 +101,7 @@ popularity and CF strategies.
 | `limit`    | no       | max items, default 10 |
 | `exclude`  | no       | comma-separated item ids to omit (e.g. items already in cart) |
 | `category` | no       | restrict popularity fallback to one category |
-| `strategy` | no       | `auto` (default), or pin one of `popularity`, `content-similarity`, `item-based-cf` |
+| `strategy` | no       | `auto` (default), or pin one of `popularity`, `content-similarity`, `item-based-cf`, `matrix-factorization` |
 
 Response:
 
@@ -138,9 +136,11 @@ Response:
 
 ## Roadmap
 
-- [ ] Matrix factorization strategy for high-volume, dense catalogs
+- [x] Matrix factorization strategy for high-volume, dense catalogs
 - [ ] Session-based (sequential) recommendations for anonymous/pre-login users
 - [ ] Postgres-backed nightly retraining job for the CF co-occurrence matrix
+      and matrix-factorization model (currently retrained in-process on an
+      event-count change, capped by a short in-memory TTL)
 - [ ] JS/TS SDK
 
 ## Development

@@ -4,7 +4,15 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from shelf.core import mf_cache
 from shelf.storage.models import Base
+
+
+@pytest.fixture(autouse=True)
+def _clear_mf_cache():
+    mf_cache.clear()
+    yield
+    mf_cache.clear()
 
 
 @pytest.fixture()

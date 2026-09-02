@@ -16,6 +16,12 @@ from shelf.storage.models import Event, Item
 MIN_CATALOG_INTERACTIONS_FOR_CF = 30
 MIN_USER_EVENTS_FOR_PERSONALIZATION = 1
 
+# Event volume at which live per-request co-occurrence (item-based CF) starts
+# costing more than it's worth, and a trained latent-factor model pays off
+# instead. This is a "your catalog got real" threshold, not a quality one —
+# CF still works below it, MF just starts working *better* above it.
+MIN_EVENTS_FOR_MATRIX_FACTORIZATION = 2000
+
 
 def popularity_strategy(
     session: Session, exclude: set[str], limit: int, category: str | None = None
@@ -156,6 +162,61 @@ def item_based_cf_strategy(
         )
         for item_id, score in ranked
     ]
+
+
+def matrix_factorization_strategy(
+    session: Session, user_id: str, exclude: set[str], limit: int
+) -> list[Recommendation]:
+    """High-volume default: latent-factor model (implicit ALS) trained on the
+    full interaction history, cached and only retrained as data grows."""
+    from shelf.core.matrix_factorization import fit_als
+    from shelf.core.mf_cache import get_or_fit
+
+    now = time.time()
+    rows = session.execute(
+        select(Event.user_id, Event.item_id, Event.action, Event.weight, Event.ts)
+    ).all()
+    if not rows:
+        return []
+
+    interactions: dict[tuple[str, str], float] = defaultdict(float)
+    for uid, item_id, action, weight, ts in rows:
+        w = action_weight(action, weight if weight != 1.0 else None) * recency_decay(ts, now)
+        interactions[(uid, item_id)] += w
+
+    model = get_or_fit(
+        event_count=len(rows),
+        fit_fn=lambda: fit_als(interactions),
+    )
+    if model is None:
+        return []
+
+    already_seen = {item_id for uid, item_id in interactions if uid == user_id}
+    ranked = model.recommend(user_id, exclude | already_seen, limit)
+    if not ranked:
+        return []
+
+    max_score = max(s for _, s in ranked) or 1.0
+    min_score = min(s for _, s in ranked)
+    span = (max_score - min_score) or 1.0
+
+    results = []
+    for item_id, score in ranked:
+        anchor = model.nearest_item(item_id, exclude | {item_id})
+        reason = (
+            f"Matches your latent preference pattern, close to {anchor}"
+            if anchor
+            else "Matches your latent preference pattern"
+        )
+        results.append(
+            Recommendation(
+                item_id=item_id,
+                score=round((score - min_score) / span, 4),
+                reason=reason,
+                strategy="matrix-factorization",
+            )
+        )
+    return results
 
 
 def _normalize(score: float, ranked: list[tuple[str, float]]) -> float:
