@@ -1,0 +1,10 @@
+services:
+  shelf:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - shelf-data:/data
+
+volumes:
+  shelf-data:
