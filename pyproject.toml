@@ -33,12 +33,14 @@ Repository = "https://github.com/AliAkbariAlashti/shelf"
 Issues = "https://github.com/AliAkbariAlashti/shelf/issues"
 
 [project.optional-dependencies]
+django = ["django>=4.2"]
 dev = [
     "pytest>=8.0",
     "httpx>=0.27",
     "ruff>=0.4",
     "build>=1.2",
     "twine>=5.0",
+    "django>=4.2",
 ]
 
 [project.scripts]

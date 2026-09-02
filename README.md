@@ -73,6 +73,56 @@ for item in result["items"]:
 
 No SDK required — it's a REST API. Call it from any language.
 
+## Framework integrations
+
+### Django
+
+Inherit from `ShelfTrackedModel` instead of `models.Model` on whatever model
+already represents the interaction — a purchase, a view log, a rating — and
+every new row logs a Shelf event automatically. No changes to your views,
+serializers, or admin.
+
+```python
+from shelf.integrations.django import ShelfTrackedModel
+
+class Purchase(ShelfTrackedModel):
+    shelf_user_field = "user_id"
+    shelf_item_field = "product_id"
+    shelf_action = "purchase"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+```
+
+```bash
+pip install "shelf-recs[django]"
+```
+
+By default this sends events to `SHELF_URL` (falls back to
+`http://localhost:8000`). If your Django app and Shelf share the same
+`DATABASE_URL`, set `SHELF_DIRECT_DB = True` in settings to write events
+straight into Shelf's database instead of over HTTP.
+
+### FastAPI
+
+A `Depends`-based dependency hands your route a ready-to-use Shelf client:
+
+```python
+from fastapi import Depends
+from shelf.integrations.fastapi import get_shelf
+from shelf.sdk import ShelfClient
+
+@app.post("/purchase")
+def purchase(item_id: str, user_id: str, shelf: ShelfClient = Depends(get_shelf)):
+    # ... your existing purchase logic ...
+    shelf.track(user=user_id, item=item_id, action="purchase")
+    return {"status": "ok"}
+```
+
+Configured from env vars: `SHELF_URL` (default `http://localhost:8000`), or
+set `SHELF_DIRECT_DB=true` to write straight into Shelf's database when both
+apps share a `DATABASE_URL`.
+
 ## API
 
 ### `POST /v1/events`
@@ -137,6 +187,7 @@ Response:
 ## Roadmap
 
 - [x] Matrix factorization strategy for high-volume, dense catalogs
+- [x] Django integration (`ShelfTrackedModel`) and FastAPI integration (`Depends(get_shelf)`)
 - [ ] Session-based (sequential) recommendations for anonymous/pre-login users
 - [ ] Postgres-backed nightly retraining job for the CF co-occurrence matrix
       and matrix-factorization model (currently retrained in-process on an
