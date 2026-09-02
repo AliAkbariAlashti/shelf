@@ -13,8 +13,9 @@ def client(monkeypatch):
     os.close(db_fd)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
 
-    import shelf.storage.db as db_module
     import importlib
+
+    import shelf.storage.db as db_module
 
     importlib.reload(db_module)
 

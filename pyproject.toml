@@ -34,3 +34,8 @@ include = ["shelf*"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
+# B008: FastAPI's Depends()/Query() defaults are the framework's own idiom,
+# not the mutable-default footgun this rule guards against.
+extend-ignore = ["B008"]
